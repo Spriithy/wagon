@@ -13,10 +13,10 @@ func TestScanner(t *testing.T) {
 	}
 
 	var tok *Token
-	tok = s.NextToken()
+	tok = s.Next()
 	for tok.Kind != EOF {
 		fmt.Printf("%d:%d %s\n", tok.Line, tok.Column, tok.String())
-		tok = s.NextToken()
+		tok = s.Next()
 	}
 	fmt.Printf("%d:%d %s\n", tok.Line, tok.Column, tok.String())
 

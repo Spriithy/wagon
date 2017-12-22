@@ -1,3 +1,8 @@
+// Copyright 2017 The go-interpreter Authors.  All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package wast provides an interface to Wagon for wast files
 package wast
 
 import (
@@ -50,42 +55,43 @@ func NewScanner(path string) *Scanner {
 }
 
 const (
-	EofRune = -1
-	ErrRune = -2
+	eofRune = -1
+	errRune = -2
 )
 
 func (s *Scanner) peek() rune {
 	if s.eof {
-		return EofRune
+		return eofRune
 	}
 
 	r, _, err := s.inBuf.ReadRune()
+	defer s.inBuf.UnreadRune() // rewind
+
 	if err == io.EOF {
-		return EofRune
+		return eofRune
 	} else if err != nil {
 		s.raise(err)
-		return ErrRune
+		return errRune
 	}
 
-	s.inBuf.UnreadRune() // rewind
 	return r
 }
 
 func (s *Scanner) next() rune {
 	if s.eof {
-		return EofRune
+		return eofRune
 	}
 
 	r, n, err := s.inBuf.ReadRune()
 	if err == io.EOF {
 		s.eof = true
-		s.ch = EofRune
+		s.ch = eofRune
 		s.offset += n
 		s.Column++
-		return EofRune
+		return eofRune
 	} else if err != nil {
 		s.raise(err)
-		return ErrRune
+		return errRune
 	}
 
 	if r == '\n' {
@@ -116,14 +122,14 @@ func (s *Scanner) matchIf(f func(rune) bool) bool {
 	return false
 }
 
-func (s *Scanner) NextToken() (token *Token) {
+func (s *Scanner) Next() (token *Token) {
 	s.token = &Token{
 		Line:   s.Line,
 		Column: s.Column,
 	}
 	token = s.token
 
-	if s.match(EofRune) {
+	if s.match(eofRune) {
 		token.Kind = EOF
 		s.next()
 		return
@@ -134,7 +140,7 @@ func (s *Scanner) NextToken() (token *Token) {
 	case s.match('('):
 		if s.match(';') {
 			s.scanBlockComment()
-			return s.NextToken()
+			return s.Next()
 		}
 		token.Text = "("
 		token.Kind = LPAR
@@ -146,7 +152,7 @@ func (s *Scanner) NextToken() (token *Token) {
 	case s.match(';'):
 		if s.match(';') {
 			s.scanLineComment()
-			return s.NextToken()
+			return s.Next()
 		}
 		s.errorf("unexpected character ';'")
 	case s.match('$'): // names/vars
@@ -170,7 +176,7 @@ func (s *Scanner) NextToken() (token *Token) {
 		s.next()
 	}
 
-	return s.NextToken()
+	return s.Next()
 }
 
 func (s *Scanner) scanString() {
@@ -321,11 +327,9 @@ func (s *Scanner) scanBlockComment() {
 	}
 }
 
-// *** // *** // *** // *** // *** // **** // *** // *** // *** // *** // *** //
-
 const (
-	scanErrPrefix  = "\x1b[31merror:\x1b[0m "
-	scanWarnPrefix = "\x1b[34mwarining:\x1b[0m "
+	scanErrPrefix  = "error: "
+	scanWarnPrefix = "warning: "
 )
 
 // errorf generates a new scanner error appended to the scanner's Errors field
@@ -340,8 +344,6 @@ func (s *Scanner) raise(err error) {
 	err2 := fmt.Errorf(scanErrPrefix+"%s\n  %s\n", s.file, err.Error())
 	s.Errors = append(s.Errors, err2)
 }
-
-// *** // *** // *** // *** // *** // **** // *** // *** // *** // *** // *** //
 
 func safeRune(r rune) string {
 	switch r {
