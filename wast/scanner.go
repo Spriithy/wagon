@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package wast provides an interface to Wagon for wast files
 package wast
 
 import (
@@ -14,11 +13,12 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/go-interpreter/wagon/wasm"
 )
 
 type Scanner struct {
 	file  string
-	input string
 	inBuf *bytes.Buffer
 
 	ch    rune
@@ -43,7 +43,6 @@ func NewScanner(path string) *Scanner {
 		return &s
 	}
 
-	s.input = string(buf)
 	s.inBuf = bytes.NewBuffer(buf)
 
 	s.eof = false
@@ -136,7 +135,7 @@ func (s *Scanner) Next() (token *Token) {
 	}
 
 	switch {
-	case s.matchIf(isSpace): //ignore spaces
+	case s.matchIf(isSpace): // ignore spaces
 	case s.match('('):
 		if s.match(';') {
 			s.scanBlockComment()
@@ -164,9 +163,7 @@ func (s *Scanner) Next() (token *Token) {
 		s.scanString()
 		return
 	case s.matchIf(isReserved):
-		if !s.scanReserved() {
-			s.errorf("unknown operator")
-		}
+		s.scanReserved()
 		return
 	case s.matchIf(isUtf8):
 		s.errorf("malformed operator")
@@ -293,17 +290,46 @@ func (s *Scanner) scanVar() {
 	}
 }
 
-func (s *Scanner) scanReserved() bool {
+func (s *Scanner) scanReserved() {
 	s.token.Text = string(s.ch)
 	for s.matchIf(isReserved) {
 		s.token.Text += string(s.ch)
+
+		if isType(s.token.Text) && s.match('.') {
+			s.scanTypedReserved(s.token.Text)
+			return
+		}
+	}
+
+	// isolated type token 'i32', 'f64', ...
+	if isType(s.token.Text) {
+		s.token.Kind = VALUE_TYPE
+		s.token.Data = valueTypeOf(s.token.Text)
+		return
 	}
 
 	// Basic instruction / reserved word
 	if k, ok := tokenKindOf[s.token.Text]; ok {
 		s.token.Kind = k
 	}
-	return true
+}
+
+func (s *Scanner) scanTypedReserved(t string) {
+	var instr string
+
+	s.token.Text += string(s.ch) // '.'
+	for s.matchIf(isReserved) {
+		instr += string(s.ch)
+	}
+	s.token.Text += instr
+
+	s.token.Data = valueTypeOf(t)
+	if k, ok := typedKindOf[instr]; ok {
+		s.token.Kind = k
+		return
+	}
+
+	s.errorf("unkown operator")
 }
 
 func (s *Scanner) scanLineComment() {
@@ -522,4 +548,18 @@ func digitValue(r rune) int {
 		return int(r) - 'A' + 10
 	}
 	return 16 // max
+}
+
+func valueTypeOf(s string) wasm.ValueType {
+	switch s {
+	case "i32":
+		return wasm.ValueTypeI32
+	case "i64":
+		return wasm.ValueTypeI64
+	case "f32":
+		return wasm.ValueTypeF32
+	case "f64":
+		return wasm.ValueTypeF64
+	}
+	return 0 // TODO find a suitable error ValueType value
 }

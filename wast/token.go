@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package wast provides an interface to Wagon for wast files
 package wast
 
 import "fmt"
@@ -84,11 +83,76 @@ const (
 	ALIGN_EQ_NAT
 
 	CONST
-	UNARY
-	BINARY
-	TEST
-	COMPARE
-	CONVERT
+	LOAD_8
+	LOAD_16
+	LOAD_32
+	STORE_8
+	STORE_16
+	STORE_32
+
+	CLZ
+	CTZ
+	POPCNT
+	NEG
+	ABS
+	SQRT
+	CEIL
+	FLOOR
+	TRUNC
+	NEAREST
+
+	ADD
+	SUB
+	MUL
+	DIV_S
+	DIV_U
+	REM_S
+	REM_U
+	AND
+	OR
+	XOR
+	SHL
+	SHR_S
+	SHR_U
+	ROTL
+	ROTR
+	MIN
+	MAX
+	COPYSIGN
+
+	EQZ
+	EQ
+	NE
+	LT_S
+	LT_U
+	LE_S
+	LE_U
+	GT_S
+	GT_U
+	GE_S
+	GE_U
+	LT
+	LE
+	GT
+	GE
+
+	WRAP
+	EXTEND_S
+	EXTEND_U
+	DEMOTE
+	PROMOTE
+	TRUNC_S_F32
+	TRUNC_U_F32
+	TRUNC_S_F64
+	TRUNC_U_F64
+	CONVERT_S_I32
+	CONVERT_U_I32
+	CONVERT_S_I64
+	CONVERT_U_I64
+	REINTERPRET_I32
+	REINTERPRET_I64
+	REINTERPRET_F32
+	REINTERPRET_F64
 
 	UNREACHABLE
 	CURRENT_MEMORY
@@ -193,6 +257,78 @@ var tokenKindOf = map[string]TokenKind{
 	"output":                       OUTPUT,
 }
 
+var typedKindOf = map[string]TokenKind{
+	"const":           CONST,
+	"load":            LOAD,
+	"store":           STORE,
+	"load8":           LOAD_8,
+	"load16":          LOAD_16,
+	"load32":          LOAD_32,
+	"store8":          STORE_8,
+	"store16":         STORE_16,
+	"store32":         STORE_32,
+	"clz":             CLZ,
+	"ctz":             CTZ,
+	"popcnt":          POPCNT,
+	"neg":             NEG,
+	"abs":             ABS,
+	"sqrt":            SQRT,
+	"ceil":            CEIL,
+	"floor":           FLOOR,
+	"trunc":           TRUNC,
+	"nearest":         NEAREST,
+	"add":             ADD,
+	"sub":             SUB,
+	"mul":             MUL,
+	"div_s":           DIV_S,
+	"div_u":           DIV_U,
+	"rem_s":           REM_S,
+	"rem_u":           REM_U,
+	"and":             AND,
+	"or":              OR,
+	"xor":             XOR,
+	"shl":             SHL,
+	"shr_s":           SHR_S,
+	"shr_u":           SHR_U,
+	"rotl":            ROTL,
+	"rort":            ROTR,
+	"min":             MIN,
+	"max":             MAX,
+	"copysign":        COPYSIGN,
+	"eqz":             EQZ,
+	"eq":              EQ,
+	"ne":              NE,
+	"lt_s":            LT_S,
+	"lt_u":            LT_U,
+	"le_s":            LE_S,
+	"le_u":            LE_U,
+	"gt_s":            GT_S,
+	"gt_u":            GT_U,
+	"ge_s":            GE_S,
+	"ge_u":            GE_U,
+	"lt":              LT,
+	"le":              LE,
+	"gt":              GT,
+	"ge":              GE,
+	"wrap/i64":        WRAP,
+	"extend_s/i32":    EXTEND_S,
+	"extend_u/i32":    EXTEND_U,
+	"demote/f64":      DEMOTE,
+	"promote/f32":     PROMOTE,
+	"trunc_s/f32":     TRUNC_S_F32,
+	"trunc_u/f32":     TRUNC_U_F32,
+	"trunc_s/f64":     TRUNC_S_F64,
+	"trunc_u/f64":     TRUNC_U_F64,
+	"convert_s/i32":   CONVERT_S_I32,
+	"convert_u/i32":   CONVERT_U_I32,
+	"convert_s/i64":   CONVERT_S_I64,
+	"convert_u/i64":   CONVERT_U_I64,
+	"reinterpret/i32": REINTERPRET_I32,
+	"reinterpret/i64": REINTERPRET_I64,
+	"reinterpret/f32": REINTERPRET_F32,
+	"reinterpret/f64": REINTERPRET_F64,
+}
+
 var tokenStrings = [...]string{
 	NAT:                          "NAT",
 	INT:                          "INT",
@@ -229,11 +365,72 @@ var tokenStrings = [...]string{
 	OFFSET_EQ_NAT:                "OFFSET_EQ_NAT",
 	ALIGN_EQ_NAT:                 "ALIGN_EQ_NAT",
 	CONST:                        "CONST",
-	UNARY:                        "UNARY",
-	BINARY:                       "BINARY",
-	TEST:                         "TEST",
-	COMPARE:                      "COMPARE",
-	CONVERT:                      "CONVERT",
+	LOAD_8:                       "LOAD_8",
+	LOAD_16:                      "LOAD_16",
+	LOAD_32:                      "LOAD_32",
+	STORE_8:                      "STORE_8",
+	STORE_16:                     "STORE_16",
+	STORE_32:                     "STORE_32",
+	CLZ:                          "CLZ",
+	CTZ:                          "CTZ",
+	POPCNT:                       "POPCNT",
+	NEG:                          "NEG",
+	ABS:                          "ABS",
+	SQRT:                         "SQRT",
+	CEIL:                         "CEIL",
+	FLOOR:                        "FLOOR",
+	TRUNC:                        "TRUNC",
+	NEAREST:                      "NEAREST",
+	ADD:                          "ADD",
+	SUB:                          "SUB",
+	MUL:                          "MUL",
+	DIV_S:                        "DIV_S",
+	DIV_U:                        "DIV_U",
+	REM_S:                        "REM_S",
+	REM_U:                        "REM_U",
+	AND:                          "AND",
+	OR:                           "OR",
+	XOR:                          "XOR",
+	SHL:                          "SHL",
+	SHR_S:                        "SHR_S",
+	SHR_U:                        "SHR_U",
+	ROTL:                         "ROTL",
+	ROTR:                         "ROTR",
+	MIN:                          "MIN",
+	MAX:                          "MAX",
+	COPYSIGN:                     "COPYSIGN",
+	EQZ:                          "EQZ",
+	EQ:                           "EQ",
+	NE:                           "NE",
+	LT_S:                         "LT_S",
+	LT_U:                         "LT_U",
+	LE_S:                         "LE_S",
+	LE_U:                         "LE_U",
+	GT_S:                         "GT_S",
+	GT_U:                         "GT_U",
+	GE_S:                         "GE_S",
+	GE_U:                         "GE_U",
+	LT:                           "LT",
+	LE:                           "LE",
+	GT:                           "GT",
+	GE:                           "GE",
+	WRAP:                         "WRAP",
+	EXTEND_S:                     "EXTEND_S",
+	EXTEND_U:                     "EXTEND_U",
+	DEMOTE:                       "DEMOTE",
+	PROMOTE:                      "PROMOTE",
+	TRUNC_S_F32:                  "TRUNC_S_F32",
+	TRUNC_U_F32:                  "TRUNC_U_F32",
+	TRUNC_S_F64:                  "TRUNC_S_F64",
+	TRUNC_U_F64:                  "TRUNC_U_F64",
+	CONVERT_S_I32:                "CONVERT_S_I32",
+	CONVERT_U_I32:                "CONVERT_U_I32",
+	CONVERT_S_I64:                "CONVERT_S_I64",
+	CONVERT_U_I64:                "CONVERT_U_I64",
+	REINTERPRET_I32:              "REINTERPRET_I32",
+	REINTERPRET_I64:              "REINTERPRET_I64",
+	REINTERPRET_F32:              "REINTERPRET_F32",
+	REINTERPRET_F64:              "REINTERPRET_F64",
 	UNREACHABLE:                  "UNREACHABLE",
 	CURRENT_MEMORY:               "CURRENT_MEMORY",
 	GROW_MEMORY:                  "GROW_MEMORY",
