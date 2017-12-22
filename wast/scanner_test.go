@@ -9,6 +9,10 @@ import (
 var wastFile = flag.String("wast-file", "", "the wast file to test")
 
 func TestScanner(t *testing.T) {
+	if *wastFile == "" {
+		t.Errorf("error: no input file")
+	}
+
 	s := NewScanner(*wastFile)
 	if len(s.Errors) > 0 {
 		fmt.Println(s.Errors[0])
