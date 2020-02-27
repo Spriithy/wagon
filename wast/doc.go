@@ -2,5 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package wast provides an interface to Wagon for wast files.
+// Package wast provides functions to handle wast files.
+//
+// See https://webassembly.github.io/spec/core/text/
 package wast
