@@ -66,9 +66,10 @@ func (s *Scanner) peek() rune {
 	r, _, err := s.inBuf.ReadRune()
 	defer s.inBuf.UnreadRune() // rewind
 
-	if err == io.EOF {
+	switch {
+	case err == io.EOF:
 		return eofRune
-	} else if err != nil {
+	case err != nil:
 		s.raise(err)
 		return errRune
 	}
@@ -82,13 +83,14 @@ func (s *Scanner) next() rune {
 	}
 
 	r, n, err := s.inBuf.ReadRune()
-	if err == io.EOF {
+	switch {
+	case err == io.EOF:
 		s.eof = true
 		s.ch = eofRune
 		s.offset += n
 		s.Column++
 		return eofRune
-	} else if err != nil {
+	case err != nil:
 		s.raise(err)
 		return errRune
 	}
